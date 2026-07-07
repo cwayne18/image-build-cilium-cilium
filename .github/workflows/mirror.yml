@@ -44,7 +44,8 @@ jobs:
     - name: Verify pushed manifest is multi-arch
       run: |
         set -euo pipefail
-        docker buildx imagetools inspect "${TARGET_IMAGE}"
-        docker buildx imagetools inspect "${TARGET_IMAGE}" --raw | grep -q 'linux/amd64' || (echo "missing amd64"; exit 1)
-        docker buildx imagetools inspect "${TARGET_IMAGE}" --raw | grep -q 'linux/arm64' || (echo "missing arm64"; exit 1)
+        INSPECT="$(docker buildx imagetools inspect "${TARGET_IMAGE}")"
+        echo "${INSPECT}"
+        echo "${INSPECT}" | grep -q "linux/amd64" || { echo "missing amd64"; exit 1; }
+        echo "${INSPECT}" | grep -q "linux/arm64" || { echo "missing arm64"; exit 1; }
         echo "pushing manifest for ${TARGET_IMAGE} confirmed multi-arch"
