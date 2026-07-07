@@ -1,0 +1,50 @@
+name: Mirror upstream image
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+    paths:
+      - '.github/workflows/mirror.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+# Manifest-preserving mirror of the upstream cilium agent image to GHCR.
+# This re-tags the exact upstream multi-arch manifest (linux/amd64 + linux/arm64)
+# under ghcr.io/cwayne18 -- it is NOT a from-source hardened rebuild. See MIRROR.md.
+env:
+  SOURCE_IMAGE: quay.io/cilium/cilium:v1.19.4
+  TARGET_IMAGE: ghcr.io/cwayne18/hardened-cilium-cilium:v1.19.4
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+    - name: Log in to GHCR
+      uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Mirror multi-arch manifest to GHCR
+      run: |
+        set -euo pipefail
+        echo "Source: ${SOURCE_IMAGE}"
+        echo "Target: ${TARGET_IMAGE}"
+        docker buildx imagetools create --tag "${TARGET_IMAGE}" "${SOURCE_IMAGE}"
+
+    - name: Verify pushed manifest is multi-arch
+      run: |
+        set -euo pipefail
+        docker buildx imagetools inspect "${TARGET_IMAGE}"
+        docker buildx imagetools inspect "${TARGET_IMAGE}" --raw | grep -q 'linux/amd64' || (echo "missing amd64"; exit 1)
+        docker buildx imagetools inspect "${TARGET_IMAGE}" --raw | grep -q 'linux/arm64' || (echo "missing arm64"; exit 1)
+        echo "pushing manifest for ${TARGET_IMAGE} confirmed multi-arch"
