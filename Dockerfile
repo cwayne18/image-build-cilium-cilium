@@ -20,7 +20,7 @@
 
 ARG CILIUM_ENVOY_IMAGE=ghcr.io/cwayne18/hardened-cilium-cilium-envoy:latest
 ARG GOLANG_IMAGE=rancher/hardened-build-base:v1.26.4b1
-ARG RUNTIME_IMAGE=registry.suse.com/bci/bci-base:15.7
+ARG RUNTIME_IMAGE=registry.suse.com/bci/bci-base:16.0
 
 FROM ${CILIUM_ENVOY_IMAGE} AS cilium-envoy
 
